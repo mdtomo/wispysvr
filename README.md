@@ -11,5 +11,5 @@ pip install -r requirements.txt
 ## Testing
 ```
 export APP_CONFIG=config.cfg
-python -m unittest discover
+python -m unittest test.test_wispysvr
 ```
