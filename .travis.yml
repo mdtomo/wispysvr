@@ -16,6 +16,6 @@ install:
   - "pip install -r requirements.txt"
   - "pip install coveralls"
 # command to run tests
-script: coverage run -m unittest test.test_wispysvr
+script: coverage run --source=wispysvr -m unittest test.test_wispysvr
 after_success:
   coveralls
