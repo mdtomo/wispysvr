@@ -22,4 +22,4 @@ class SetupForTest(object):
 
 @pytest.fixture(scope='session')
 def setup():
-    yield SetupForTest()
+    return SetupForTest()
