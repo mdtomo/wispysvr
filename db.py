@@ -10,7 +10,8 @@ import nacl.pwhash
 
 def connect():
     try:
-        db.connect('wispysvr', host='wispysvrdb', port=27017)
+        #db.connect('wispysvr', host='wispysvrdb', port=27017)
+        db.connect(str(os.getenv('MONGODB_NAME')), host=str(os.getenv('MONGODB_HOST')), port=int(os.getenv('MONGODB_PORT')))
         print(os.getenv('APP_CONFIG'))
         time.sleep(1)
     except db.MongoEngineConnectionError as e:

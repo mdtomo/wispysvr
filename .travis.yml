@@ -30,6 +30,11 @@ before_script:
   - docker run -d -p 127.0.0.1:27017:27017 mongo:3.4.6
   - docker ps -a
 
+env:
+  - env MONGODB_NAME=wispysvr
+  - env MONGODB_HOST=localhost
+  - env MONGODB_PORT=27017
+
 # command to run tests
 script: py.test test/ --cov=wispysvr --cov=db
 
