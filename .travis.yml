@@ -1,3 +1,5 @@
+sudo: required
+
 language: python
 python:
   #- "2.6"
@@ -11,11 +13,26 @@ python:
   - "3.6-dev" # 3.6 development branch
   - "3.7-dev" # 3.7 development branch
   - "nightly" # currently points to 3.7-dev
-# command to install dependencies
+
+services:
+  - docker
+
+before_install:
+  - sudo apt-get update
+  - sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-engine
+
 install: 
   - "pip install -r requirements.txt"
-  - "pip install coveralls"
+  - "pip install pytest && pip install python-coveralls"
+  
+before_script:
+  - docker pull mongo/3.4.6
+  - docker run -d -p 127.0.0.1:3004:27017 mongo/3.4.6
+  - docker ps -a
+
 # command to run tests
-script: coverage run --source=wispysvr -m unittest test.test_wispysvr
+script: py.test test/ --cov=wispysvr --cov=db
+
 after_success:
   coveralls
+  

@@ -1,0 +1,18 @@
+# Wispysvr 
+
+version: '3'
+services:
+  wispysvr:
+      build: .
+      ports:
+        - "3003:5000"
+      volumes:
+        - .:/wispysvr
+      environment:
+        - PYTHONUNBUFFERED=0
+      command: sh -c "py.test test/ --cov=wispysvr --cov=db && python wispysvr.py"
+  wispysvrdb:
+      image: "mongo:3.4.6"
+      ports:
+        - "3004:27017"
+  

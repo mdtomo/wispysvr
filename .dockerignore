@@ -1,0 +1,7 @@
+__pycache__/
+._.DS_Store
+.DS_Store
+Dockerfile
+.travis.yml
+docker-compose.yml
+.git/
