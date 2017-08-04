@@ -27,7 +27,7 @@ install:
   
 before_script:
   - docker pull mongo:3.4.6
-  - docker run -d -p 127.0.0.1:3004:27017 mongo:3.4.6
+  - docker run -d -p 127.0.0.1:27017:27017 mongo:3.4.6
   - docker ps -a
 
 # command to run tests
