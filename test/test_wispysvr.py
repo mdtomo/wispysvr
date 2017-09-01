@@ -44,7 +44,7 @@ class TestWispysvr(object):
 
 
     def test_post_wispy_api(self, flask_instance):
-        response = flask_instance.post('/wispy/1')
+        response = flask_instance.post('/wispy')
         assert response.status_code == 401, 'Protected wispy api post route should return status 401.'
 
 
@@ -67,4 +67,16 @@ class TestWispysvr(object):
         response = flask_instance.post('/login', data=dict(username=setup.test_user, password=setup.test_passwd), follow_redirects=True)
         token_len = len(json.loads(response.data)[0]['access_token'])
         assert token_len == 297, 'Auth token length should be 297.'
+
+
+    def test_post_probe_receiver(self, flask_instance, header_with_token):
+        probe = dict(owner='test', ts='1504207712123456', mac='00:00:00:00:00:00', channel='1234(6)', rssi='-60', ssid='Test network')
+        response = flask_instance.post('/wispy', headers=header_with_token, data=json.dumps(probe), content_type='application/json')
+        assert response.status_code == 200
+
+
+    def test_get_probes_by_time(self, flask_instance, header_with_token):
+        response = flask_instance.get('/probes', headers=header_with_token)
+        assert response.status_code == 200
+        
 

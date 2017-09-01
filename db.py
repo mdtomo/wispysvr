@@ -10,7 +10,6 @@ import nacl.pwhash
 
 def connect():
     try:
-        #db.connect('wispysvr', host='wispysvrdb', port=27017)
         db.connect(str(os.getenv('MONGODB_NAME')), host=str(os.getenv('MONGODB_HOST')), port=int(os.getenv('MONGODB_PORT')))
         print(os.getenv('APP_CONFIG'))
         time.sleep(1)
@@ -30,7 +29,7 @@ class MacAlias(db.EmbeddedDocument):
     
 class User(db.Document):
     username = db.StringField(max_length=50, min_length=4, required=True, unique=True)
-    email = db.EmailField(unique=True)
+    email = db.EmailField(unique=False) # Should be unique in production.
     password = db.StringField(max_length=256, required=True)
     previous_logins = db.ListField(db.EmbeddedDocumentField(LogUser))
     previous_failed_logins = db.ListField(db.EmbeddedDocumentField(LogUser))
@@ -91,13 +90,21 @@ def create_user(username, password):
         user = User(username=username, password=hash_password(password))
         user.isAdmin = True
         user.save()
+        return True
     except db.errors.NotUniqueError as e:
         print(e)
+        return False
+
+
+def remove_user(username):
+    user = User.objects(username=username).get()
+    user.delete()
+    return True
 
         
 class Probe(db.Document):
     owner = db.ReferenceField(User, reverse_delete_rule=db.CASCADE)
-    ts = db.ComplexDateTimeField(required=True)
+    ts = db.StringField(required=True) #db.ComplexDateTimeField(required=True)
     mac = db.StringField(max_length=17, min_length=17, required=True)
     channel = db.StringField(required=True)
     rssi = db.IntField(required=True)
@@ -115,5 +122,9 @@ class Probe(db.Document):
 
     
 def create_probe(user, request):
-    Probe(owner=user, ts=request.ts, mac=request.mac, channel=request.channel, rssi=request.rssi, ssid=request.ssid).save()
+    Probe(owner=user, ts=request['ts'], mac=request['mac'], channel=request['channel'], rssi=request['rssi'], ssid=request['ssid']).save()
+
+
+def get_probes_by_time():
+    return Probe.objects().all().to_json()
 
