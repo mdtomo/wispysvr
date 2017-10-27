@@ -13,8 +13,8 @@ services:
         - MONGODB_NAME=wispysvr
         - MONGODB_HOST=wispysvrdb
         - MONGODB_PORT=27017
-      command: sh -c "py.test -v test/ --cov=wispysvr --cov=db"
-      #command: sh -c "python wispysvr.py"
+      #command: sh -c "py.test -v test/ --cov=wispysvr --cov=db"
+      command: sh -c "python wispysvr.py"
   wispysvrdb:
       image: "mongo:3.4.6"
       ports:

@@ -13,3 +13,6 @@ six==1.10.0
 Werkzeug==0.12.2
 WTForms==2.1
 pynacl==1.1.2
+flask-cors==3.0.3
+eventlet==0.21.0
+Flask-SocketIO==2.9.2
