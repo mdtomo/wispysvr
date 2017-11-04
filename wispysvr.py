@@ -1,11 +1,15 @@
-from flask import Flask, request, abort, render_template, jsonify, redirect, url_for
-from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity, jwt_refresh_token_required, create_refresh_token, set_access_cookies, set_refresh_cookies, unset_jwt_cookies
-from flask_socketio import SocketIO, Namespace, emit, join_room, leave_room
-from flask_cors import CORS, cross_origin
+from flask import Flask, request, abort, render_template, jsonify, redirect, url_for, session
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity, get_jti, decode_token, get_jwt_claims, jwt_refresh_token_required, create_refresh_token, set_access_cookies, set_refresh_cookies, unset_jwt_cookies
+from jwt import ExpiredSignatureError
+from flask_socketio import SocketIO, Namespace, disconnect, emit, send, join_room, leave_room
+from flask_cors import CORS
+# from flask_session import Session
+from pymongo import MongoClient
 from mongoengine import errors
+from functools import wraps
 import db
-import functools
-import logging
+import os, logging, datetime
+
 
 app = Flask(__name__)
 app.config.from_envvar('APP_CONFIG')
@@ -17,26 +21,44 @@ db.connect()
 
 def authentication_required(f):
     """
-    Custom decorator function to check if the user is authenticated before allowing
-    socketio connections.
+    Custom decorator function to check if the socket event has a valid JWT inside cookie,
+    sent with each request.
     """
-    @functools.wraps(f)
-    def wrapped(*args, **kwargs):
-        print('authentication_required called ', args, kwargs)
-    return wrapped
+    @wraps(f)
+    def check_session(*args, **kwargs):
+        if request.cookies['wispysvr_access']:
+            ''' Socket request has access cookie present '''
+            access_token = request.cookies['wispysvr_access']
+            try:
+                ''' Token inside cookie is valid, connect the user. '''
+                # get_jti(access_token)
+                decode_token(access_token)
+                print('Socket event authorized. ', )
+            except ExpiredSignatureError as e:
+                print('THE ERROR ', e)
+                disconnect()
+        else:
+            return False
+    return check_session
 
 
 @socketio.on('connect', namespace='/')
-# @authentication_required
+@authentication_required
 def socket_connection():
-    print('Clients connected', socketio.server.manager.rooms['/'])
-    print('Socket io client cookies ', request.cookies)
-    emit('wispysvr', 'You are connected')
-
+    # print('Clients connected', socketio.server.manager.rooms['/'])
+    print('Socket.on connect called..')
+    
 
 @socketio.on('disconnect', namespace='/')
 def socket_disconnection():
     print('Client disconnected', socketio.server.manager.rooms['/'])
+
+
+@socketio.on('queryProbes', namespace='/')
+@authentication_required
+def on_queryProbes(json):
+    print('queryProbes ', json)
+    send('Received', json=True)
 
 
 @socketio.on('authorization')
@@ -44,7 +66,7 @@ def on_authorization(json):
     # print(json['data'])
     join_room(json['data']['user'])
     print('Clients connected room', socketio.server.manager.rooms['/'])
-    print('Socket io auth test req headers: ', request.cookies)
+    print('Socket io auth test req headers: ', request.cookies['wispysvr_access'])
 
 
 @socketio.on('log out')
@@ -64,9 +86,17 @@ def login_view():
     return render_template('login.html')
 
 
+@jwt.user_claims_loader
+def add_claim_to_access_token(identity):
+    return {
+        'ip': request.remote_addr
+    }
+
+
 @app.route('/login', methods=['POST'])
 def login():
     if request.method == 'POST':
+        print('REQUEST ', request.remote_addr)
         username = request.form['username']
         password = request.form['password']
         unauthorized = ('Bad username or password.', 401)
@@ -90,6 +120,7 @@ def login():
 @app.route('/logout')
 def logout():
     response = jsonify({ 'authorized': False })
+    jti = get_jti(request.cookies['wispysvr_access'])
     unset_jwt_cookies(response)
     return (response, 200)
 
